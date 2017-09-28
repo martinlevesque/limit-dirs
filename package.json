@@ -1,0 +1,25 @@
+{
+  "name": "limit-dirs",
+  "version": "1.0.0",
+  "description": "Limit directories sizes",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinlevesque/limit-dirs.git"
+  },
+  "keywords": [
+    "directory"
+  ],
+  "author": "Martin Lévesque",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/martinlevesque/limit-dirs/issues"
+  },
+  "homepage": "https://github.com/martinlevesque/limit-dirs#readme",
+  "dependencies": {
+    "watch": "^1.0.2"
+  }
+}
