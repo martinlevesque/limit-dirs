@@ -30,7 +30,7 @@ class LimirDirs {
           this.activateWatch(dir, this.defaultLimitMB);
         }
       }
-    });;
+    });
   }
 
   pretty() {
