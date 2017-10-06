@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const getFSize = require("get-folder-size");
 
-class LimirDirs {
+class LimitDirs {
   constructor(rootDir, subDirs = [], options = {}) {
     this.rootDir = rootDir;
     this.subDirs = subDirs;
@@ -92,7 +92,7 @@ class LimirDirs {
   }
 }
 
-let d = new LimirDirs("./", [/* {"subdir": '...', limitMB: 1000} */],
+let d = new LimitDirs("./", [/* {"subdir": '...', limitMB: 1000} */],
   { "autoDiscoverNewSubDirs": true, "defaultLimitMB": 1000 });
 
 d.pretty();
