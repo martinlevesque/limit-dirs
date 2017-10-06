@@ -45,11 +45,13 @@ class LimirDirs {
   }
 
   scanRoot() {
-    const dirs = fs.readdirSync(this.rootDir);
-
-    for (let dir of dirs) {
-      this.activateWatch(dir);
-    }
+    fs.readdir(this.rootDir, (err, dirs) => {
+      if ( ! err) {
+        for (let dir of dirs) {
+          this.activateWatch(dir);
+        }
+      }
+    });;
   }
 
   pretty() {
@@ -83,19 +85,19 @@ class LimirDirs {
 
   activateWatch(dir) {
     const normDir = path.resolve(dir);
-    
-    if ( ! fs.lstatSync(normDir).isDirectory()) {
-      return;
-    }
-    console.log("checking for " + normDir);
 
-    if ( ! this.activatedWatches[normDir]) {
-      this._initWatch(normDir);
-      this.activatedWatches[normDir] = {
-        "status": "active"
-      };
-
-    }
+    fs.lstat(normDir, (err, stat) => {
+      if ( ! err) {
+        if (stat.isDirectory()) {
+          if ( ! this.activatedWatches[normDir]) {
+            this._initWatch(normDir);
+            this.activatedWatches[normDir] = {
+              "status": "active"
+            };
+          }
+        }
+      }
+    });
   }
 }
 
