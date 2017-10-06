@@ -1,6 +1,7 @@
 const watch = require("watch");
 const fs = require("fs");
 const path = require("path");
+const getFSize = require("get-folder-size");
 
 class LimirDirs {
   constructor(rootDir, subDirs = [], options = {}) {
@@ -39,7 +40,11 @@ class LimirDirs {
     console.log(this.activatedWatches);
   }
 
-  _initWatch(dir) {
+  _initWatch(dir, initialMB) {
+
+    console.log("dir = " + dir);
+    console.log(initialMB);
+
     watch.watchTree(dir, function (f, curr, prev) {
         if (typeof f == "object" && prev === null && curr === null) {
           // Finished walking the tree
@@ -67,13 +72,20 @@ class LimirDirs {
     fs.lstat(normDir, (err, stat) => {
       if ( ! err) {
         if (stat.isDirectory()) {
-          if ( ! this.activatedWatches[normDir]) {
-            this._initWatch(normDir);
-            this.activatedWatches[normDir] = {
-              "status": "active",
-              limitMB
-            };
-          }
+
+          getFSize(dir, (err, size) => {
+            if ( ! err) {
+              let sizeMB = size / 1024 / 1024;
+
+              if ( ! this.activatedWatches[normDir]) {
+                this._initWatch(normDir, sizeMB);
+                this.activatedWatches[normDir] = {
+                  "status": "active",
+                  limitMB
+                };
+              }
+            }
+          });
         }
       }
     });

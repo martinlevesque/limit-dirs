@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/martinlevesque/limit-dirs#readme",
   "dependencies": {
+    "get-folder-size": "^1.0.0",
     "watch": "^1.0.2"
   }
 }
