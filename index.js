@@ -31,9 +31,10 @@ class LimirDirs {
     this.subDirs = subDirs;
     this.autoDiscoverNewSubDirs = options.autoDiscoverNewSubDirs;
     this.activatedWatches = {};
+    this.defaultLimitMB = options.defaultLimitMB;
 
     for (let d of subDirs) {
-      this.activateWatch(d);
+      this.activateWatch(d.subdir, d.limitMB);
     }
 
     if (this.autoDiscoverNewSubDirs) {
@@ -48,7 +49,7 @@ class LimirDirs {
     fs.readdir(this.rootDir, (err, dirs) => {
       if ( ! err) {
         for (let dir of dirs) {
-          this.activateWatch(dir);
+          this.activateWatch(dir, this.defaultLimitMB);
         }
       }
     });;
@@ -83,7 +84,7 @@ class LimirDirs {
       })
   }
 
-  activateWatch(dir) {
+  activateWatch(dir, limitMB) {
     const normDir = path.resolve(dir);
 
     fs.lstat(normDir, (err, stat) => {
@@ -92,7 +93,8 @@ class LimirDirs {
           if ( ! this.activatedWatches[normDir]) {
             this._initWatch(normDir);
             this.activatedWatches[normDir] = {
-              "status": "active"
+              "status": "active",
+              limitMB
             };
           }
         }
@@ -101,6 +103,7 @@ class LimirDirs {
   }
 }
 
-let d = new LimirDirs("./", [], { "autoDiscoverNewSubDirs": true });
+let d = new LimirDirs("./", [/* {"subdir": '...', limitMB: 1000} */],
+  { "autoDiscoverNewSubDirs": true, "defaultLimitMB": 1000 });
 
 d.pretty();
