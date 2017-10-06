@@ -75,7 +75,7 @@ class LimirDirs {
 
           getFSize(dir, (err, size) => {
             if ( ! err) {
-              let sizeMB = size / 1024 / 1024;
+              let sizeMB = size / 1000 / 1000;
 
               if ( ! this.activatedWatches[normDir]) {
                 this._initWatch(normDir, sizeMB);
