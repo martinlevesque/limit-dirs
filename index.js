@@ -10,6 +10,7 @@ class LimitDirs {
     this.rootDir = options.rootDir || "./";
     this.subDirs = options.subDirs || [];
     this.level = options.level || 1;
+    this.intervalAutoScan = options.intervalAutoScan || 60;
     this.autoDiscoverNewSubDirs = options.autoDiscoverNewSubDirs || false;
     this.defaultLimitMB = options.defaultLimitMB || 1000000;
     this.activatedWatches = {};
@@ -22,7 +23,7 @@ class LimitDirs {
     if (this.autoDiscoverNewSubDirs) {
       setInterval(() => {
         this.scanRoot();
-      }, 3000);
+      }, this.intervalAutoScan * 1000);
     }
 
   }
@@ -58,13 +59,16 @@ class LimitDirs {
   }
 
   _deleteFile(f) {
-    setTimeout(() => {
+    return new Promise((resolve, reject) => {
       fs.unlink(f, (err) => {
         if ( ! err) {
           this._log("deleted " + f);
+          resolve();
+        } else {
+          reject(err);
         }
       });
-    }, 3000);
+    });
   }
 
   _isSameAction(previousActionInfo, curAction, f) {
@@ -174,33 +178,81 @@ class LimitDirs {
       })
   }
 
+
+  _getFirstFileFromRoot(root, contentDir = null) {
+    if ( ! contentDir) {
+      contentDir = dirTree(root).children;
+    }
+
+    for (let f of contentDir) {
+      if (f.type != "directory") {
+        return f;
+      } else {
+        let oneInChildren = this._getFirstFileFromRoot(f.path, f.children);
+
+        if (oneInChildren) {
+          return oneInChildren;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async _checkAndCleanInitFolder(root, sizeMB, limitMB) {
+    try {
+      while (sizeMB > limitMB) {
+        let file = this._getFirstFileFromRoot(root);
+
+        if ( ! file) {
+          break;
+        }
+
+        await this._deleteFile(file.path);
+
+        sizeMB = (await this._sizeFileOrFolder(root, {
+          "isDirectory": function() { return true; }
+        })).size / 1000 / 1000;
+      }
+    } catch(err) {
+      this._log("issue cleaning " + root + ": " + err);
+    }
+  }
+
+
+
   activateWatch(dir, limitMB) {
     const normDir = path.resolve(dir);
 
-    fs.lstat(normDir, (err, stat) => {
-      if ( ! err) {
-        if (stat.isDirectory()) {
+    if ( ! this.activatedWatches[normDir]) {
+      fs.lstat(normDir, (err, stat) => {
+        if ( ! err) {
+          if (stat.isDirectory()) {
 
-          getFSize(dir, (err, size) => {
-            if ( ! err) {
-              let sizeMB = size / 1000 / 1000;
+            getFSize(dir, (err, size) => {
+              if ( ! err) {
+                let sizeMB = size / 1000 / 1000;
 
-              if ( ! this.activatedWatches[normDir]) {
-                this._initWatch(normDir, sizeMB, limitMB);
-                this.activatedWatches[normDir] = {
-                  "status": "active",
-                  limitMB
-                };
+                this._checkAndCleanInitFolder(normDir, sizeMB, limitMB).then(() => {
+                  this._initWatch(normDir, sizeMB, limitMB);
+                  this.activatedWatches[normDir] = {
+                    "status": "active",
+                    limitMB
+                  };
+
+                }).catch(err => {
+                  this._log(err);
+                });
+              } else {
+                this._log("issue " + err);
               }
-            } else {
-              this._log("issue " + err);
-            }
-          });
+            });
+          }
+        } else {
+          this._log("issue " + err);
         }
-      } else {
-        this._log("issue " + err);
-      }
-    });
+      });
+    }
   }
 }
 
@@ -210,6 +262,7 @@ new LimitDirs(
     "level": 2,
     "subDirs": [],
     "autoDiscoverNewSubDirs": true,
+    "intervalAutoScan": 3,
     "defaultLimitMB": 5,
     "verbose": true
   });
