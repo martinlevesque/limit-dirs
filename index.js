@@ -34,16 +34,9 @@ class LimitDirs {
   }
 
   _getFoldersWithLevel(dirs, level, curLevel, result = []) {
-    console.log("----------------====================");
-    console.log(dirs);
-    console.log("cur level = " + curLevel);
-    console.log("result = ");
-    console.log(result);
-
     for (let f of dirs) {
       if (f.type == "directory") {
         if (level == curLevel) {
-          console.log("adding " + f.path);
           result.push(f);
         }
         else if (curLevel < level) {
@@ -56,19 +49,12 @@ class LimitDirs {
   }
 
   scanRoot() {
+    let dirsWithLevel =
+      this._getFoldersWithLevel(dirTree(this.rootDir).children, this.level, 1, []);
 
-    let finalR = this._getFoldersWithLevel(dirTree(this.rootDir).children, this.level, 1, []);
-
-    console.log("finall");
-    console.log(finalR);
-
-    fs.readdir(this.rootDir, (err, dirs) => {
-      if ( ! err) {
-        for (let dir of dirs) {
-          this.activateWatch(this.rootDir + "/" + dir, this.defaultLimitMB);
-        }
-      }
-    });
+    for (let dir of dirsWithLevel) {
+      this.activateWatch(dir.path, this.defaultLimitMB);
+    }
   }
 
   _deleteFile(f) {
@@ -224,6 +210,6 @@ new LimitDirs(
     "level": 2,
     "subDirs": [],
     "autoDiscoverNewSubDirs": true,
-    "defaultLimitMB": 100,
+    "defaultLimitMB": 5,
     "verbose": true
   });
