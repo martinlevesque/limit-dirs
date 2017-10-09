@@ -8,24 +8,26 @@ const dirTree = require("directory-tree");
 class LimitDirs {
   constructor(options = {}) {
     this.rootDir = options.rootDir || "./";
-    this.subDirs = options.subDirs || [];
+    this.forceDirs = options.forceDirs || [];
     this.level = options.level || 1;
     this.intervalAutoScan = options.intervalAutoScan || 60;
     this.autoDiscoverNewSubDirs = options.autoDiscoverNewSubDirs || false;
     this.defaultLimitMB = options.defaultLimitMB || 1000000;
     this.activatedWatches = {};
     this.verbose = options.verbose || false;
+  }
 
-    for (let d of this.subDirs) {
-      this.activateWatch(d.subdir, d.limitMB);
+  launch() {
+    for (let d of this.forceDirs) {
+      this._log("force to check dir " + d.dir + " with limit " + d.limitMB);
+      this._activateWatch(d.dir, d.limitMB);
     }
 
     if (this.autoDiscoverNewSubDirs) {
       setInterval(() => {
-        this.scanRoot();
+        this._scanRoot();
       }, this.intervalAutoScan * 1000);
     }
-
   }
 
   _log(msg) {
@@ -49,12 +51,12 @@ class LimitDirs {
     return result;
   }
 
-  scanRoot() {
+  _scanRoot() {
     let dirsWithLevel =
       this._getFoldersWithLevel(dirTree(this.rootDir).children, this.level, 1, []);
 
     for (let dir of dirsWithLevel) {
-      this.activateWatch(dir.path, this.defaultLimitMB);
+      this._activateWatch(dir.path, this.defaultLimitMB);
     }
   }
 
@@ -219,9 +221,7 @@ class LimitDirs {
     }
   }
 
-
-
-  activateWatch(dir, limitMB) {
+  _activateWatch(dir, limitMB) {
     const normDir = path.resolve(dir);
 
     if ( ! this.activatedWatches[normDir]) {
@@ -256,13 +256,4 @@ class LimitDirs {
   }
 }
 
-new LimitDirs(
-  {
-    "rootDir": "/home/martin/dummy/",
-    "level": 2,
-    "subDirs": [],
-    "autoDiscoverNewSubDirs": true,
-    "intervalAutoScan": 3,
-    "defaultLimitMB": 5,
-    "verbose": true
-  });
+module.exports = LimitDirs
