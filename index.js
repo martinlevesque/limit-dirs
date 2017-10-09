@@ -17,6 +17,7 @@ class LimitDirs {
     this.verbose = options.verbose || false;
   }
 
+  // begin starting the watch methods to the limited directories
   launch() {
     for (let d of this.forceDirs) {
       this._log("force to check dir " + d.dir + " with limit " + d.limitMB);
@@ -24,13 +25,19 @@ class LimitDirs {
     }
 
     if (this.autoDiscoverNewSubDirs) {
-      setInterval(() => {
+      this.objIntervalAutoScan = setInterval(() => {
         this._scanRoot();
       }, this.intervalAutoScan * 1000);
     }
   }
 
+  // stop all watches
   stop() {
+
+    if (this.objIntervalAutoScan) {
+      clearInterval(this.objIntervalAutoScan);
+    }
+
     for (let dir of Object.keys(this.activatedWatches)) {
       watch.unwatchTree(dir);
     }
@@ -57,12 +64,17 @@ class LimitDirs {
     return result;
   }
 
-  _scanRoot() {
-    let dirsWithLevel =
-      this._getFoldersWithLevel(dirTree(this.rootDir).children, this.level, 1, []);
 
-    for (let dir of dirsWithLevel) {
-      this._activateWatch(dir.path, this.defaultLimitMB);
+  _scanRoot() {
+    try {
+      let dirsWithLevel =
+        this._getFoldersWithLevel(dirTree(this.rootDir).children, this.level, 1, []);
+
+      for (let dir of dirsWithLevel) {
+        this._activateWatch(dir.path, this.defaultLimitMB);
+      }
+    } catch(err) {
+      this._log(err);
     }
   }
 
@@ -124,12 +136,10 @@ class LimitDirs {
     let timeoutCheckSize = null;
 
     watch.watchTree(dir, (f, curr, prev) => {
-        this._log("watch treee of ");
-        this._log(f);
         if (typeof f == "object" && prev === null && curr === null) {
           // Finished walking the tree
-
-        } else if (prev === null && ! this._isSameAction(previousAction, "C", f)) { // CREATED
+        } else if (prev === null && ! this._isSameAction(previousAction, "C", f)) {
+          // CREATED
           // f is a new file
 
           this._sizeFileOrFolder(f, curr).then((sizeInfo) => {

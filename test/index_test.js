@@ -3,6 +3,7 @@ const fs = require("fs");
 const LimitDirs = require("../index");
 const proc = require('child_process');
 const path = require('path');
+const rmDir = require("rimraf");
 
 function genAndWriteFile(bytes, pathTo) {
   let s = "";
@@ -12,30 +13,49 @@ function genAndWriteFile(bytes, pathTo) {
   }
 
   try {
-    let dir = path.dirname(pathTo) + "/";
-    fs.mkdirSync(dir);
-  } catch(err) {
-
-  }
-
-  try {
     fs.writeFileSync(pathTo, s, 'utf8');
   } catch(err) {
+    console.log("err writing " + pathTo);
     console.log(err);
   }
 }
 
-function clearTest() {
+function genDirFor(pathTo) {
+  try {
+    let dir = path.dirname(pathTo) + "/";
+    fs.mkdirSync(dir);
+  } catch(err) {
+  }
+}
+
+function removeFolder(folder) {
+  return new Promise((resolve, reject) => {
+    try {
+      //fs.unlinkSync(folder + "test.txt");
+      rmDir(folder, function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    } catch(err) {
+      reject(err);
+    }
+  });
+}
+
+async function clearTest() {
   const folders2Check = [
-    "./test/repos-test/basic/",
     "./test/repos-test/basic-limited/",
     "./test/repos-test/big-file-added-after-init/",
     "./test/repos-test/small-file-added-after-init/",
-  ]
+    "./test/repos-test/websites/"
+  ];
 
   for (let folder of folders2Check) {
     try {
-      fs.unlinkSync(folder + "test.txt");
+      await removeFolder(folder);
     } catch(err) {
 
     }
@@ -46,13 +66,91 @@ describe('LimitDirs', function() {
 
   this.timeout(120000);
 
-  describe('with 5 KB limit without auto discover', function() {
+  beforeEach(function(done) {
+    clearTest().then(() => {
+      done();
+    });
+  });
 
-    beforeEach(function() {
-      clearTest();
+  describe('with 5 KB limit with auto discover', function() {
+
+    it("should not erase with smaller file - auto", function(done) {
+
+      genDirFor("./test/repos-test/websites/test.txt");
+      genDirFor("./test/repos-test/websites/user1/test.txt");
+      genDirFor("./test/repos-test/websites/user2/test.txt");
+      genDirFor("./test/repos-test/websites/user1/website1/test.txt");
+      genDirFor("./test/repos-test/websites/user2/website2/test.txt");
+
+      const dirLimiter = new LimitDirs(
+        {
+          "rootDir": "./test/repos-test/websites/",
+          "level": 2,
+          "forceDirs": [],
+          "autoDiscoverNewSubDirs": true,
+          "intervalAutoScan": 3,
+          "defaultLimitMB": 5 / 1000,
+          "verbose": true
+        });
+
+      dirLimiter.launch();
+
+      setTimeout(() => {
+        genAndWriteFile(10, "./test/repos-test/websites/user1/website1/test.txt");
+        genAndWriteFile(10, "./test/repos-test/websites/user2/website2/test.txt");
+      }, 3000);
+
+      setTimeout(() => {
+        let fExists = fs.existsSync("./test/repos-test/websites/user1/website1/test.txt");
+        expect(fExists).to.equal(true);
+        fExists = fs.existsSync("./test/repos-test/websites/user2/website2/test.txt");
+        expect(fExists).to.equal(true);
+        dirLimiter.stop();
+        setTimeout(() => done(), 1000);
+      }, 10000);
     });
 
+    it("should erase only 1 big file - auto", function(done) {
+      genDirFor("./test/repos-test/websites/test.txt");
+      genDirFor("./test/repos-test/websites/user1/test.txt");
+      genDirFor("./test/repos-test/websites/user2/test.txt");
+      genDirFor("./test/repos-test/websites/user1/website1/test.txt");
+      genDirFor("./test/repos-test/websites/user2/website2/test.txt");
+
+      const dirLimiter = new LimitDirs(
+        {
+          "rootDir": "./test/repos-test/websites/",
+          "level": 2,
+          "forceDirs": [],
+          "autoDiscoverNewSubDirs": true,
+          "intervalAutoScan": 3,
+          "defaultLimitMB": 5 / 1000,
+          "verbose": true
+        });
+
+      dirLimiter.launch();
+
+      setTimeout(() => {
+        genAndWriteFile(10, "./test/repos-test/websites/user1/website1/test.txt");
+        genAndWriteFile(10000, "./test/repos-test/websites/user2/website2/test.txt");
+      }, 3000);
+
+      setTimeout(() => {
+        let fExists = fs.existsSync("./test/repos-test/websites/user1/website1/test.txt");
+        expect(fExists).to.equal(true);
+        fExists = fs.existsSync("./test/repos-test/websites/user2/website2/test.txt");
+        expect(fExists).to.equal(false);
+        dirLimiter.stop();
+        setTimeout(() => done(), 1000);
+      }, 10000);
+    });
+  });
+
+  describe('with 5 KB limit without auto discover', function() {
+
     it("should not erase with smaller file", function(done) {
+
+      genDirFor("./test/repos-test/basic/small-file.txt");
 
       const dirLimiter = new LimitDirs(
         {
@@ -65,7 +163,7 @@ describe('LimitDirs', function() {
           "autoDiscoverNewSubDirs": false,
           //"intervalAutoScan": 3,
           "defaultLimitMB": 5 / 1000,
-          "verbose": true
+          "verbose": false
         });
 
       dirLimiter.launch();
@@ -80,6 +178,8 @@ describe('LimitDirs', function() {
 
     it("should erase on start with bigger file", function(done) {
 
+      genDirFor("./test/repos-test/basic-limited/test.txt");
+
       const dirLimiter = new LimitDirs(
         {
           //"rootDir": "/home/martin/dummy/",
@@ -91,7 +191,7 @@ describe('LimitDirs', function() {
           "autoDiscoverNewSubDirs": false,
           //"intervalAutoScan": 3,
           "defaultLimitMB": 1,
-          "verbose": true
+          "verbose": false
         });
 
       genAndWriteFile(10000, "./test/repos-test/basic-limited/test.txt");
@@ -108,6 +208,8 @@ describe('LimitDirs', function() {
 
     it("should not erase with small file added", function(done) {
 
+      genDirFor("./test/repos-test/small-file-added-after-init/test.txt");
+
       const dirLimiter = new LimitDirs(
         {
           //"rootDir": "/home/martin/dummy/",
@@ -119,7 +221,7 @@ describe('LimitDirs', function() {
           "autoDiscoverNewSubDirs": false,
           //"intervalAutoScan": 3,
           "defaultLimitMB": 1,
-          "verbose": true
+          "verbose": false
         });
 
       setTimeout(() => {
@@ -138,6 +240,8 @@ describe('LimitDirs', function() {
 
     it("should erase with big file added", function(done) {
 
+      genDirFor("./test/repos-test/big-file-added-after-init/test.txt");
+
       const dirLimiter = new LimitDirs(
         {
           //"rootDir": "/home/martin/dummy/",
@@ -149,7 +253,7 @@ describe('LimitDirs', function() {
           "autoDiscoverNewSubDirs": false,
           //"intervalAutoScan": 3,
           "defaultLimitMB": 1,
-          "verbose": true
+          "verbose": false
         });
 
       setTimeout(() => {
@@ -166,13 +270,12 @@ describe('LimitDirs', function() {
       }, 10000);
     });
 
-    afterEach(function() {
-      clearTest();
-    });
   });
 
-
-
-
+  afterEach(function(done) {
+    clearTest().then(() => {
+      done();
+    });
+  });
 
 });
