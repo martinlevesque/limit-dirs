@@ -2,12 +2,20 @@ const expect = require('expect.js');
 const fs = require("fs");
 const LimitDirs = require("../index");
 const proc = require('child_process');
+const path = require('path');
 
 function genAndWriteFile(bytes, pathTo) {
   let s = "";
 
   for (let i = 0; i < bytes; ++i) {
     s += "a";
+  }
+
+  try {
+    let dir = path.dirname(pathTo) + "/";
+    fs.mkdirSync(dir);
+  } catch(err) {
+
   }
 
   try {
