@@ -30,6 +30,12 @@ class LimitDirs {
     }
   }
 
+  stop() {
+    for (let dir of Object.keys(this.activatedWatches)) {
+      watch.unwatchTree(dir);
+    }
+  }
+
   _log(msg) {
     if (this.verbose) {
       console.log((new Date()) + ": " + msg);
