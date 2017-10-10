@@ -1,6 +1,6 @@
 {
   "name": "limit-dirs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Limit directories sizes",
   "main": "index.js",
   "scripts": {
