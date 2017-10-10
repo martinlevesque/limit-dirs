@@ -64,10 +64,12 @@ dirLimiter.launch();
 This will check every 3 seconds for new sub directories with level 2 and limit
 these directories to 5 MB. So let's say we now have the following tree:
 
+```
 -- ./test/repos-test/websites/
 ---- ./test/repos-test/websites/user1
 ------ ./test/repos-test/websites/user1/website1
 ------ ./test/repos-test/websites/user1/website2
+```
 
 Both website1 and website2 will be limited to 5 MB each.
 
@@ -76,8 +78,6 @@ Both website1 and website2 will be limited to 5 MB each.
 ```
 npm install -g limit-dirs
 ```
-
-The command line usage is the following:
 
 The command line usage is the following:
 
