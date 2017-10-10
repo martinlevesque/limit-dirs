@@ -6,7 +6,7 @@ const LimitDirs = require("../index");
 const commander = require("commander");
 
 commander
-    .version("1.0.2");
+    .version("1.0.3");
 
 commander
   .command('launch')
@@ -20,12 +20,12 @@ commander
     const dirLimiter = new LimitDirs(
       {
         "rootDir": opts.rootDir,
-        "level": opts.level,
+        "level": parseInt(opts.level),
         "forceDirs": [],
         "autoDiscoverNewSubDirs": true,
-        "intervalAutoScan": opts.intervalAutoScan,
-        "defaultLimitMB": opts.defaultLimitMB,
-        "verbose": opts.verbose
+        "intervalAutoScan": parseFloat(opts.intervalAutoScan),
+        "defaultLimitMB": parseFloat(opts.defaultLimitMB),
+        "verbose": opts.verbose == "true"
       });
 
     dirLimiter.launch();
