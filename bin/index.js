@@ -1,8 +1,12 @@
+#!/usr/bin/env node
+
+'use strict';
+
 const LimitDirs = require("../index");
 const commander = require("commander");
 
 commander
-    .version("1.0.1");
+    .version("1.0.2");
 
 commander
   .command('launch')
